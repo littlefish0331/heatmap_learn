@@ -2,7 +2,7 @@
 
 學習各種 Heatmap 的繪製方式，也可以使用google map啦，但是以非google map的做法為優先。
 
-- 目前已知的圖資來源: Google Map、OpenStreetMap(osm)、Stamen、Mapbox、Naver Map、thunderforest
+- 目前已知的圖資來源: Google Map、OpenStreetMap(osm)、Stamen、Mapbox、Naver Map、thunderforest、CartoDB
 
 ## 進度
 
