@@ -1,5 +1,8 @@
 # README
 
+- [Leaflet for R - Popups and Labels](https://rstudio.github.io/leaflet/popups.html)
+- [Documentation - Leaflet - a JavaScript library for interactive maps](https://leafletjs.com/reference-1.6.0.html)
+
 學習各種 Heatmap 的繪製方式，也可以使用google map啦，但是以非google map的做法為優先。
 
 - 目前已知的圖資來源: Google Map、OpenStreetMap(osm)、Stamen、Mapbox、Naver Map、thunderforest、CartoDB
@@ -61,6 +64,11 @@ getbb
 opq
 add_osm_feature
 osmdata_sf
+
+**leaflet:**
+
+- [Leaflet for R - Introduction](https://rstudio.github.io/leaflet/)
+  - [Documentation - Leaflet - a JavaScript library for interactive maps](https://leafletjs.com/reference-1.6.0.html)
 
 ### 未完成
 

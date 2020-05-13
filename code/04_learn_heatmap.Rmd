@@ -1,0 +1,449 @@
+---
+title: "Untitled"
+author: "Steve, Yu"
+date: "2020/5/13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(dplyr)
+library(data.table)
+
+opts_chunk$set(echo = TRUE)
+```
+
+# File Target
+
+- learn leaflet
+
+---
+
+# leaflet tutorial
+
+[Leaflet for R - Introduction](https://rstudio.github.io/leaflet/)
+
+```{r}
+library(leaflet)
+```
+
+## Introduction
+
+```{r}
+leaflet() %>% addTiles()
+```
+
+```{r}
+m <- leaflet() %>%
+  addTiles() %>%  # Add default OpenStreetMap map tiles
+  addMarkers(lng=174.768, lat=-36.852, popup="The birthplace of R")
+m  # Print the map
+
+# ---
+# tmaptools::geocode_OSM("taipei 101")
+m <- leaflet() %>%
+  addTiles() %>%
+  addMarkers(lng = 121.56481, lat = 25.03369, popup = "Taipei 101")
+m  # Print the map
+```
+
+方便使用 %>% 進行操作。
+
+```{r}
+m <- leaflet()
+m <- addTiles(m)
+m <- addMarkers(m, lng=174.768, lat=-36.852, popup="The birthplace of R")
+m
+
+m <- leaflet()
+m <- addTiles(m)
+m <- addMarkers(m, lng = 121.56481, lat = 25.03369, popup = "Taipei 101")
+m
+```
+
+---
+
+## The Map Widget
+
+```{r}
+leafletOptions()
+```
+
+### Initializing Options
+
+```{r}
+# Set value for the minZoom and maxZoom settings.
+# 透過參數 minZoom = 0, maxZoom = 18，可以限制初始使用者的畫面，以及最大的縮放程度。
+leaflet(options = leafletOptions(minZoom = 4, maxZoom = 18)) %>% addTiles()
+```
+
+### Map Methods
+
+- setView(): sets the center of the map view and the zoom level
+- fitBounds(): fits the view into the rectangle [lng1, lat1] – [lng2, lat2]
+- clearBounds(): clears the bound, so that the view will be automatically determined by the range of latitude/longitude data in the map layers if provided
+
+- setView(): 設置地圖視圖的中心和縮放級別
+- fitBounds(): 使視圖適合矩形[lng1，lat1] – [lng2，lat2]
+- clearBounds(): 清除邊界，以便根據地圖圖層中的緯度/經度數據范圍自動確定視圖
+
+### The Data Object
+
+Both leaflet() and the map layer functions have an optional data parameter that is designed to receive spatial data in one of several forms:
+
+- From base R:
+  - lng/lat matrix
+  - data frame with lng/lat columns
+  
+- From the sp package:
+  - SpatialPoints[DataFrame]
+  - Line/Lines
+  - SpatialLines[DataFrame]
+  - Polygon/Polygons
+  - SpatialPolygons[DataFrame]
+  
+- From the maps package:
+  - the data frame from returned from map()
+
+參數 data 的詳細操作再去文件看。  
+總之，他很聰明會去偵測 lat lon 的欄位。
+
+以下寫法都是相同的。
+
+```{r}
+# add some circles to a map
+df = data.frame(Lat = 1:10, Long = rnorm(10))
+leaflet(data = df) %>% addCircles()
+
+# ---
+leaflet(df) %>% addCircles(lng = ~Long, lat = ~Lat)
+
+# ---
+leaflet() %>% addCircles(data = df)
+leaflet() %>% addCircles(data = df, lat = ~ Lat, lng = ~ Long)
+```
+
+```{r}
+library(sp)
+Sr1 = Polygon(cbind(c(2, 4, 4, 1, 2), c(2, 3, 5, 4, 2))) #四邊形，頭尾的點要相同。
+Sr2 = Polygon(cbind(c(5, 4, 2, 5), c(2, 3, 2, 2))) #三角形，頭尾的點要相同。
+Sr3 = Polygon(cbind(c(4, 4, 5, 10, 4), c(5, 3, 2, 5, 5)))
+Sr4 = Polygon(cbind(c(5, 6, 6, 5, 5), c(4, 4, 3, 3, 4)), hole = TRUE) #小正方形
+Srs1 = Polygons(list(Sr1), "s1")
+Srs2 = Polygons(list(Sr2), "s2")
+Srs3 = Polygons(list(Sr4, Sr3), "s3/4")
+SpP = SpatialPolygons(list(Srs1, Srs2, Srs3), 1:3)
+leaflet(height = "300px") %>% addPolygons(data = SpP)
+```
+
+```{r}
+# help(package='maps'): 可以看有那些資料庫可以使用。沒有台灣
+library(maps)
+# mapStates = map(database = "state", fill = TRUE, plot = TRUE)
+mapStates = map(database = "state", fill = TRUE, plot = FALSE)
+leaflet(data = mapStates) %>% addTiles() %>%
+  addPolygons(fillColor = topo.colors(10, alpha = NULL), stroke = FALSE)
+```
+
+```{r}
+df = data.frame(
+  lat = rnorm(100),
+  lng = rnorm(100),
+  size = runif(n = 100, min = 5, max = 20),
+  color = sample(x = colors(), size = 100, replace = T)
+)
+m = leaflet(data = df) %>% addTiles()
+m %>% addCircleMarkers(lng = ~lng, lat = ~lat, 
+                       radius = ~size,
+                       color = ~color, fill = T)
+m %>% addCircleMarkers(lng = ~lng, lat = ~lat, 
+                       radius = runif(n = 100, min = 4, max = 10), 
+                       color = c('red'))
+```
+
+---
+
+## Using Basemaps
+
+Leaflet supports basemaps using map tiles, popularized by Google Maps and now used by nearly all interactive web maps.
+
+### Default (OpenStreetMap) Tiles
+
+The easiest way to add tiles is by calling addTiles() with no arguments; by default, OpenStreetMap tiles are used.
+
+```{r}
+m <- leaflet() %>% setView(lng = -71.0589, lat = 42.3601, zoom = 12)
+m %>% addTiles()
+
+# ---
+# tmaptools::geocode_OSM("taipei") #121.56368  25.03752 
+m <- leaflet() %>% setView(lng = 121.56368, lat = 25.03752, zoom = 12)
+m %>% addTiles()
+```
+
+### Third-Party Tiles
+
+As a convenience, leaflet also provides a named list of all the third-party tile providers that are supported by the plugin.  
+This enables you to use auto-completion feature of your favorite R IDE (like RStudio) and not have to remember or look up supported tile providers;  
+just type providers$ and choose from one of the options.  
+You can also use names(providers) to view all of the options.
+
+```{r}
+# F1，可以從連結去看更多的底圖選項。或是在$後面按下tab鍵。
+m %>% addProviderTiles(provider = providers$Stamen.Toner)
+m %>% addProviderTiles(providers$CartoDB.Positron)
+m %>% addProviderTiles(providers$Esri.NatGeoWorldMap)
+```
+
+Note that some tile set providers require you to register;  
+see the project page for more information.  
+You can pass access tokens/keys, and other options, to the tile provider by populating the options argument with the providerTileOptions() function.
+
+### Custom Tile URL Template
+
+If you happen to have a custom map tile URL template to use,  
+you can provide it as an argument to addTiles().
+
+### WMS Tiles
+
+```{r}
+leaflet() %>% addTiles() %>% setView(-93.65, 42.0285, zoom = 4) %>%
+  addWMSTiles(
+    baseUrl = "http://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r.cgi",
+    layers = "nexrad-n0r-900913",
+    options = WMSTileOptions(format = "image/png", transparent = TRUE),
+    attribution = "Weather data © 2012 IEM Nexrad"
+  )
+```
+
+### Combining Tile Layers
+
+You aren’t restricted to using a single basemap on a map;  
+you can stack them by adding multiple tile layers.  
+
+This generally only makes sense if the front tiles consist of semi transparent tiles,  
+or have an adjusted opacity via the options argument.
+
+```{r}
+m %>% addProviderTiles(providers$MtbMap) %>%
+  addProviderTiles(providers$Stamen.TonerLines,
+                   options = providerTileOptions(opacity = 0.3)) %>%
+  addProviderTiles(providers$Stamen.TonerLabels)
+```
+
+---
+
+## Markers
+
+Use markers to call out points on the map.  
+Marker locations are expressed in latitude/longitude coordinates, and can either appear as icons or as circles.
+
+### Data sources
+
+Point data for markers can come from a variety of sources: 請看文件。  
+Note that MULTIPOINT objects from sf are not supported at this time.
+
+### Icon Markers
+
+Icon markers are added using the addMarkers or the addAwesomeMarkers functions.  
+Their default appearance is a dropped pin. 
+
+As with most layer functions,  
+the popup argument can be used to add a message to be displayed on click,  
+and the label option can be used to display a text label either on hover or statically.
+
+```{r}
+data(quakes)
+
+# Show first 20 rows from the `quakes` dataset
+leaflet(data = quakes[1:20,]) %>% addTiles() %>%
+  addMarkers(lng = ~long, lat = ~lat, 
+             # icon = icons("./72px.png", iconWidth = 30), #icon可以使用自訂的，可為url
+             popup = ~as.character(mag), #控制點擊後的訊息視窗。
+             label = ~as.character(mag)) #控制滑鼠移動過去顯示的文字。
+```
+
+### Customizing Marker Icons
+
+You can provide custom markers in one of several ways, depending on the scenario.  
+For each of these ways, the icon can be provided as either a URL or as a file path.  
+For the simple case of applying a single icon to a set of markers, use makeIcon().
+
+```{r}
+greenLeafIcon <- makeIcon(
+  iconUrl = "http://leafletjs.com/examples/custom-icons/leaf-green.png",
+  iconWidth = 38, iconHeight = 95,
+  iconAnchorX = 22, iconAnchorY = 94,
+  shadowUrl = "http://leafletjs.com/examples/custom-icons/leaf-shadow.png",
+  shadowWidth = 50, shadowHeight = 64,
+  shadowAnchorX = 4, shadowAnchorY = 62
+)
+
+leaflet(data = quakes[1:4,]) %>% addTiles() %>%
+  addMarkers(lng = ~long, lat = ~lat, icon = greenLeafIcon)
+```
+
+If you have several icons to apply that vary only by a couple of parameters  
+(i.e. they share the same size and anchor points but have different URLs),  
+use the icons() function.   
+
+icons() performs similarly to data.frame(),  
+in that any arguments that are shorter than the number of markers will be recycled to fit.
+
+```{r}
+quakes1 <- quakes[1:10,]
+
+leafIcons <- icons(
+  iconUrl = ifelse(quakes1$mag < 4.6,
+    "http://leafletjs.com/examples/custom-icons/leaf-green.png",
+    "http://leafletjs.com/examples/custom-icons/leaf-red.png"
+  ),
+  iconWidth = 38, iconHeight = 95,
+  iconAnchorX = 22, iconAnchorY = 94,
+  shadowUrl = "http://leafletjs.com/examples/custom-icons/leaf-shadow.png",
+  shadowWidth = 50, shadowHeight = 64,
+  shadowAnchorX = 4, shadowAnchorY = 62
+)
+
+leaflet(data = quakes1) %>% addTiles() %>%
+  addMarkers(~long, ~lat, icon = leafIcons)
+```
+
+Finally, if you have a set of icons that vary in multiple parameters,  
+it may be more convenient to use the iconList() function.  
+
+It lets you create a list of (named or unnamed) makeIcon() icons,  
+and select from that list by position or name.
+
+```{r}
+# Make a list of icons. We'll index into it based on name.
+oceanIcons <- iconList(
+  ship = makeIcon("ferry-18.png", "ferry-18@2x.png", 18, 18),
+  pirate = makeIcon("danger-24.png", "danger-24@2x.png", 24, 24)
+)
+
+# Some fake data
+df <- sp::SpatialPointsDataFrame(
+  cbind(
+    (runif(20) - .5) * 10 - 90.620130,  # lng
+    (runif(20) - .5) * 3.8 + 25.638077  # lat
+  ),
+  data.frame(type = ifelse(runif(20) > 0.75, "pirate", "ship") #比較簡單的寫法
+  # data.frame(type = factor(
+  #   x = ifelse(runif(20) > 0.75, "pirate", "ship"), 
+  #   levels = c("ship", "pirate"))
+  )
+)
+
+leaflet(df) %>% addTiles() %>%
+  # Select from oceanIcons based on df$type
+  addMarkers(icon = ~oceanIcons[type], label = ~type)
+```
+
+### Awesome Icons
+
+Leaflet supports even more customizable markers using the awesome markers leaflet plugin.
+
+The addAwesomeMarkers() function is similar to addMarkers() function  
+but additionally allows you to specify custom colors for the markers  
+as well as icons from the `Font Awesome`, `Bootstrap Glyphicons`, and `Ion icons` icon libraries.
+
+Similar to the makeIcon, icons, and iconList functions described above,  
+you have makeAwesomeIcon, awesomeIcons and awesomeIconList functions,  
+which enable you to add awesome icons.
+
+```{r}
+# first 20 quakes
+df.20 <- quakes[1:20,]
+
+getColor <- function(quakes) {
+  sapply(quakes$mag, function(mag) {
+  if(mag <= 4) {
+    "green"
+  } else if(mag <= 5) {
+    "orange"
+  } else {
+    "red"
+  } })
+}
+
+icons <- awesomeIcons(
+  # icon = 'ios-close',
+  icon = 'coffee',
+  iconColor = 'black',
+  library = 'ion',
+  markerColor = getColor(df.20)
+)
+
+leaflet(df.20) %>% addTiles() %>%
+  addAwesomeMarkers(lng = ~long, lat = ~lat, 
+                    icon = icons, label = ~as.character(mag))
+```
+
+很多參數可以調整，可以好好研究!!  
+[Font Awesome Icons](https://fontawesome.com/v4.7.0/icons/)
+
+- library: Which icon library. Default "glyphicon", other possible values are "fa" (fontawesome) or "ion" (ionicons).
+
+- markerColor: Possible values are "red", "darkred", "lightred", "orange", "beige", "green", "darkgreen", "lightgreen", "blue", "darkblue", "lightblue", "purple", "darkpurple", "pink", "cadetblue", "white", "gray", "lightgray", "black"
+
+- iconColor: The color to use for the icon itself. Use any CSS-valid color (hex, rgba, etc.) or a named web color.
+
+- spin: If TRUE, make the icon spin (only works when library = "fa")
+
+**缺點是，好像不能改icon本體，只能更改icon中的圖標。**
+
+### Marker Clusters
+
+When there are a large number of markers on a map,  
+you can cluster them using the Leaflet.markercluster plug-in.  
+
+To enable this plug-in, you can provide a list of options to the argument clusterOptions, e.g.
+
+```{r}
+leaflet(quakes) %>% addTiles() %>% 
+  addMarkers(
+    lng = ~long, lat = ~lat,
+    clusterOptions = markerClusterOptions()
+  )
+```
+
+Using the `freezeAtZoom` argument of the markerClusterOptions() function  
+you can set the clustering to freeze as a specific zoom level.  
+For example markerClusterOptions(freezeAtZoom = 5) will freeze the cluster at zoom level 5 regardless of the user’s actual zoom level.
+
+### Circle Markers
+
+Circle markers are much like regular circles (see [Lines and Shapes](https://rstudio.github.io/leaflet/shapes.html)),  
+except that their radius in onscreen pixels stays constant regardless of zoom level.
+
+You can use their default appearance:
+
+```{r}
+leaflet(df) %>% addTiles() %>% addCircleMarkers()
+```
+
+Or customize their color, radius, stroke, opacity, etc.
+
+```{r}
+# Create a palette that maps factor levels to colors
+pal <- colorFactor(c("navy", "red"), domain = c("ship", "pirate"))
+
+leaflet(df) %>% addTiles() %>%
+  addCircleMarkers(
+    radius = ~ifelse(type == "ship", 6, 10),
+    color = ~pal(type),
+    stroke = F,
+    fillOpacity = 0.5
+  )
+```
+
+
+
+
+
+
+---
+
+# END
+
