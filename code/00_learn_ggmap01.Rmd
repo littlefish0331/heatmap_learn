@@ -83,7 +83,7 @@ If you use the former, know that you’ll need to re-do it every time you reset 
 maps_static_api_key <- 
   read.table("E:/API_key/google_api_key.txt", header = T, stringsAsFactors = F) %>%
   setDT() %>% .[API_name=="maps_static", API_key]
-# register_google(key = maps_static_api_key)
+register_google(key = maps_static_api_key)
 # google_key()
 # has_google_key()
 ```
@@ -323,6 +323,8 @@ qmap("college station, texas", zoom = 8) +
 Map distances, in both length and anticipated time(預期時間), can be computed with mapdist().  
 Moreover the function is vectorized:
 
+distance matrix api，要使用時再開起來。
+
 - mapdist(): 
   - https://maps.googleapis.com/maps/api/distancematrix/json
   - ?origins=dallas
@@ -339,9 +341,7 @@ Moreover the function is vectorized:
 # mapdist(from = c("houston, texas", "dallas"), 
 mapdist(from = c("houston, texas", "dallas"), 
         to = "waco, texas")
-#  Source : 
-#  Source : https://maps.googleapis.com/maps/api/distancematrix/json?origins=houston,+texas&destinations=waco,+texas&key=xxx&mode=driving
-#  # A tibble: 2 x 9
+# # A tibble: 2 x 9
 #    from          to               m    km miles seconds minutes hours mode  
 #    <chr>         <chr>        <int> <dbl> <dbl>   <int>   <dbl> <dbl> <chr> 
 #  1 houston, tex… waco, texas 298227  298. 185.    10257   171.   2.85 driving

@@ -95,59 +95,41 @@ chicagoMVT <- na.omit(chicagoMVT)
 chicagoMVT <- chicagoMVT %>% 
   extract(data = ., col = Location, into = c('Latitude', 'Longitude'), 
           regex = '\\(([^,]+), ([^)]+)\\)')
-chicagoMVT$Longitude <- round(as.numeric(chicagoMVT$Longitude), 5)
-chicagoMVT$Latitude <- round(as.numeric(chicagoMVT$Latitude), 5)
+chicagoMVT$Longitude <- round(as.numeric(chicagoMVT$Longitude), 2)
+chicagoMVT$Latitude <- round(as.numeric(chicagoMVT$Latitude), 2)
 ```
 
 ```{r}
 maps_static_api_key <- 
   read.table("E:/API_key/google_api_key.txt", header = T, stringsAsFactors = F) %>%
   setDT() %>% .[API_name=="maps_static", API_key]
-# register_google(key = maps_static_api_key)
+register_google(key = maps_static_api_key)
 # google_key()
 # has_google_key()
 ```
 
-
-
-
-
-```{r}
-citation("ggmap")
-map <- get_googlemap(c(-97.14667, 31.5493))
-map
-map <- get_googlemap("taipei")
-ggmap(map, maprange = T)
-
-ggmap <- map
-
-
-```
-
-
-
-
-
-
-
 ```{r}
 chicago <- get_map(location = 'chicago', zoom = 11, maptype = "roadmap")
-chicago %>% str
 ggmap(ggmap = chicago)
 ```
 
 ```{r}
-us <- c(left = -125, bottom = 25.75, right = -67, top = 49)
-get_stamenmap(us, zoom = 5, maptype = "toner-lite") %>% ggmap() 
+locationCrimes <- table(chicagoMVT$Longitude, chicagoMVT$Latitude) %>% 
+  as.data.frame()
+names(locationCrimes) <- c('long', 'lat', 'Freq')
+locationCrimes$long <- as.numeric(as.character(locationCrimes$long))
+locationCrimes$lat <- as.numeric(as.character(locationCrimes$lat))
+locationCrimes <- subset(locationCrimes, Freq > 0)
 ```
 
 ```{r}
-library(tmaptools)
-ggmap(get_stamenmap(rbind(as.numeric(paste(geocode_OSM("chicago")$bbox))), zoom = 11))
-map <- get_map(location = 'Taiwan', zoom = 7)
-
-mutate(provide_new_column = bemp - lag(bemp))
+ggmap(chicago) + 
+  geom_tile(data = locationCrimes, 
+            aes(x = long, y = lat, alpha = Freq),
+            fill = 'red') + 
+  theme(axis.title.y = element_blank(), axis.title.x = element_blank())
 ```
+
 
 
 ---
