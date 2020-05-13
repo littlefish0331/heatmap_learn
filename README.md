@@ -4,6 +4,14 @@
 
 - 目前已知的圖資來源: Google Map、OpenStreetMap(osm)、Stamen、Mapbox、Naver Map、thunderforest
 
+## 進度
+
+- 學習leaflet
+  - 底圖: check 縮放、DAS上面環境是否OK
+  - 點位
+  - heatmap
+  - animation
+
 ## 目標
 
 這些是想到的一些應用，可以做為練習的 side project
@@ -53,3 +61,29 @@ getbb
 opq
 add_osm_feature
 osmdata_sf
+
+### 未完成
+
+- 要重讀的文章
+  - [Visualising thefts using heatmaps in ggplot2 | R-bloggers](https://www.r-bloggers.com/visualising-thefts-using-heatmaps-in-ggplot2/)
+
+- 點位密集
+  - [Geographical Heat Maps in R |](https://www.molecularecologist.com/2016/03/geographical-heat-maps-in-r/)
+
+- 數值density
+  - [r - Density2d Plot using another variable for the fill (similar to geom_tile)? - Stack Overflow](https://stackoverflow.com/questions/18285415/density2d-plot-using-another-variable-for-the-fill-similar-to-geom-tile/)
+
+- 還時間讀的文章或是套件
+  - package: OpenStreetMap
+  - package: rosm
+  - package: ggmap
+  - package: leaflet
+  - google: R Kriging heatmap
+  - ggmap + ggplot2 的文章: [kahle-wickham.pdf](https://journal.r-project.org/archive/2013-1/kahle-wickham.pdf)
+  - google: R heatmap with map
+  - [raster - Plotting map resulted from kriging in R - Geographic Information Systems Stack Exchange](https://gis.stackexchange.com/questions/158021/plotting-map-resulted-from-kriging-in-r/164421)
+  - [R 的 ggmap 套件：繪製地圖與資料分佈圖，空間資料視覺化 - G. T. Wang](https://blog.gtwang.org/r/r-ggmap-package-spatial-data-visualization/)
+  - [Microsoft PowerPoint - E04-hmwu_R-Map.pptx](http://www.hmwu.idv.tw/web/R/E04-hmwu_R-Map.pdf)
+  - [Creating a heat map from coordinates using R - Axel Hodler - Medium](https://medium.com/@axelhodler/creating-a-heat-map-from-coordinates-using-r-780db4901075)
+  - [data visualization - Generating spatial heat map via ggmap in R based on a value - Stack Overflow](https://stackoverflow.com/questions/45319970/generating-spatial-heat-map-via-ggmap-in-r-based-on-a-value)
+  - [LEARN MORE: 【R】用ggmap 畫出熱點分布](http://jackthisisamazing.blogspot.com/2016/12/rggmap.html)
