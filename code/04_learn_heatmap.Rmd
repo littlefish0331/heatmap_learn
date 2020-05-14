@@ -6,6 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
+rm(list = ls()); gc()
 library(knitr)
 library(dplyr)
 library(data.table)
@@ -448,7 +449,9 @@ leaflet(df) %>% addTiles() %>%
 
 ---
 
-## Popups
+## Popups and Labels
+
+### Popups
 
 Popups are small boxes containing arbitrary HTML,  
 that point to a specific point on the map.  
@@ -470,7 +473,6 @@ leaflet() %>% addTiles() %>%
 # ---
 # tmaptools::geocode_OSM("National Center for High-performance Computing") 
 # 120.99560  24.78261 
-
 content <- paste(sep = "<br/>",
   "<b><a href='https://www.nchc.org.tw/'>NCHC</a></b>",
   "No. 7, R&D 6th Rd.",
@@ -498,14 +500,174 @@ library(htmltools)
 df <- read.csv(textConnection(
 "Name,Lat,Long
 Samurai Noodle,47.597131,-122.327298
-<b>Kukai Ramen</b>,47.6154,-122.327157
+Kukai Ramen,47.6154,-122.327157
 Tsukushinbo,47.59987,-122.326726"
 ))
 
 leaflet(df) %>% addTiles() %>%
-  addMarkers(~Long, ~Lat, popup = ~htmlEscape(Name))
+  addMarkers(lng = ~Long, lat = ~Lat, popup = ~htmlEscape(Name))
 ```
 
+In the preceding example, htmltools::htmlEscape was used to  
+santize any characters in the name that might be interpreted as HTML.  
+在前面的示例中，使用htmltools::html Escape清除名稱中可能被解釋為HTML的任何字符。
+
+While it wasn’t necessary for this example  
+(as the restaurant names contained no HTML markup),  
+doing so is important in any situation where the data may come from   
+a file or database, or from the user.
+
+In addition to markers you can also add popups on shapes like lines, circles and other polygons.
+
+### Labels
+
+A label is a textual or HTML content that can attached to markers and shapes  
+to be always displayed or displayed on mouse over.  
+Unlike popups you don’t need to click a marker/polygon for the label to be shown.
+
+```{r}
+library(htmltools)
+
+df <- read.csv(textConnection(
+"Name,Lat,Long
+Samurai Noodle,47.597131,-122.327298
+Kukai Ramen,47.6154,-122.327157
+Tsukushinbo,47.59987,-122.326726"))
+
+leaflet(df) %>% addTiles() %>%
+  addMarkers(~Long, ~Lat, label = ~htmlEscape(Name), )
+```
+
+### Customizing Marker Labels
+
+You can customize marker labels using the labelOptions argument of the addMarkers function.  
+The labelOptions argument can be populated using the labelOptions() function.  
+If noHide is false (the default) then the label is displayed only when you hover the mouse over the marker; if noHide is set to true then the label is always displayed.
+
+```{r}
+# Change Text Size and text Only and also a custom CSS
+leaflet() %>% addTiles() %>% setView(-118.456554, 34.09, 13) %>%
+  addMarkers(
+    lng = -118.456554, lat = 34.105,
+    label = "Default Label",
+    labelOptions = labelOptions(noHide = T)) %>%
+  addMarkers(
+    lng = -118.456554, lat = 34.095,
+    label = "Label w/o surrounding box",
+    labelOptions = labelOptions(noHide = T, textOnly = TRUE)) %>%
+  addMarkers(
+    lng = -118.456554, lat = 34.085,
+    label = "label w/ textsize 15px",
+    labelOptions = labelOptions(noHide = T, textsize = "15px")) %>%
+  addMarkers(
+    lng = -118.456554, lat = 34.075,
+    label = "Label w/ custom CSS style",
+    labelOptions = labelOptions(noHide = T, direction = "bottom",
+        style = list(
+        "color" = "red",
+        "font-family" = "serif",
+        "font-style" = "italic",
+        "box-shadow" = "3px 3px rgba(0,0,0,0.25)",
+        "font-size" = "12px",
+        "border-color" = "rgba(0,0,0,0.5)"
+      ))
+  )
+```
+
+```{r}
+# tmaptools::geocode_OSM("National Center for High-performance Computing") 
+# 120.99560  24.78261 
+# ---
+# addMarkers - label: 沒辦法像 參數popup，直接用 css語法，而是要在 參數style 做設定。
+# markerOptions: 控制marker的各種顯示方式。
+# popupOptions - keepInView: TRUE。popup資訊不會因為，用戶平移地圖而移出地圖邊界外。
+# popupOptions - maxWidth: px。popup資訊的框框最大寬度。
+# popupOptions - minWidth: px。popup資訊的框框最小寬度。
+# popupOptions - maxHeight: px。popup資訊的框框最大高度。
+# popupOptions - autoPan: 如果希望以平移動畫打開的popup，設置為TRUE。預設為TRUE
+# popupOptions - closeButton: 關閉popup的按鈕是否顯示。
+# popupOptions - closeOnClick: 是否點擊地圖其他地方，就可關閉popup。
+# labelOptions - noHide、permanent: label是否要常駐顯示。
+# labelOptions - textOnly: label框框是否要隱藏。
+# labelOptions - textsize: px。label字體大小。
+# labelOptions - direction: Direction where to open the tooltip. Possible values are: right, left, top, bottom, center, auto. auto will dynamically switch between right and left according to the tooltip position on the map.
+# labelOptions - opacity: 0~1。label字透明度。
+# labelOptions - sticky: label是否跟著滑鼠移動。
+
+content <- paste(sep = "<br/>",
+  "<b><a href='https://www.nchc.org.tw/'>NCHC</a></b>",
+  "No. 7, R&D 6th Rd.",
+  "SHsinchu Science Park, Hsinchu City",
+  "Taiwan, R.O.C. 30076"
+)
+
+leaflet(options = leafletOptions(minZoom = 12)) %>% 
+  addTiles() %>% 
+  setView(lng = 120.99560, lat = 24.78261, zoom = 16) %>%
+  addMarkers(
+    lng = 120.99560, lat = 24.78261, 
+    icon = leaflet::icons(iconUrl = "./72px.png", iconRetinaUrl = "./24px.png",
+                          iconAnchorX = 10, iconAnchorY = 30),
+    options = markerOptions(draggable = T, interactive = T),
+    popup = content, 
+    popupOptions = popupOptions(keepInView = T),
+    label = "NCHC", 
+    labelOptions = labelOptions(
+      noHide = T,  
+      textOnly = TRUE,
+      textsize = "30px",
+      direction = "bottom",
+      style = list(
+        "color" = "red",
+        "font-family" = "Consolas, Courier New, monospace, Microsoft JhengHei",
+        "box-shadow" = "3px 3px rgba(0,0,0,0.25)",
+        "font-size" = "20px",
+        "border-color" = "rgba(0,0,0,0.5)"
+      )
+    )
+  )
+```
+
+### Labels without markers
+
+You can create labels without the accompanying markers using the addLabelOnlyMarkers() function.
+
+```{r}
+leaflet(options = leafletOptions(minZoom = 12)) %>% 
+  addTiles() %>% 
+  setView(lng = 120.99560, lat = 24.78261, zoom = 16) %>%
+  addLabelOnlyMarkers(
+    lng = 120.99560, lat = 24.78261, 
+    label = "NCHC", 
+    labelOptions = labelOptions(
+      noHide = T,  
+      textOnly = TRUE,
+      textsize = "30px",
+      direction = "bottom",
+      style = list(
+        "color" = "red",
+        "font-family" = "Consolas, Courier New, monospace, Microsoft JhengHei",
+        "box-shadow" = "3px 3px rgba(0,0,0,0.25)",
+        "font-size" = "20px",
+        "border-color" = "rgba(0,0,0,0.5)"
+      )
+    )
+  )
+```
+
+---
+
+## Lines and Shapes
+
+Leaflet makes it easy to take spatial lines and shapes from R and add them to maps.
+
+### Polygons and Polylines
+
+Line and polygon data can come from a variety of sources: 請看文檔。
+
+```{r}
+
+```
 
 
 
