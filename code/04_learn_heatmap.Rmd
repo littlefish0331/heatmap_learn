@@ -155,7 +155,13 @@ df = data.frame(
 m = leaflet(data = df) %>% addTiles()
 m %>% addCircleMarkers(lng = ~lng, lat = ~lat, 
                        radius = ~size,
-                       color = ~color, fill = T)
+                       color = ~color, #線的顏色
+                       stroke = F, #線(邊框)是否要顯示
+                       # weight = 10, #線的粗細
+                       # opacity = 0.1, #線的透明度
+                       fillColor = ~color,
+                       fillOpacity = 1,
+                       fill = T)
 m %>% addCircleMarkers(lng = ~lng, lat = ~lat, 
                        radius = runif(n = 100, min = 4, max = 10), 
                        color = c('red'))
@@ -190,9 +196,10 @@ You can also use names(providers) to view all of the options.
 
 ```{r}
 # F1，可以從連結去看更多的底圖選項。或是在$後面按下tab鍵。
+# 注意有些圖層的縮放有限，放太大會顯示 map data not available
 m %>% addProviderTiles(provider = providers$Stamen.Toner)
-m %>% addProviderTiles(providers$CartoDB.Positron)
-m %>% addProviderTiles(providers$Esri.NatGeoWorldMap)
+m %>% addProviderTiles(provider = providers$CartoDB.Positron)
+m %>% addProviderTiles(provider = providers$Esri.NatGeoWorldMap)
 ```
 
 Note that some tile set providers require you to register;  
@@ -206,7 +213,10 @@ you can provide it as an argument to addTiles().
 
 ### WMS Tiles
 
+You can use addWMSTiles() to add WMS (Web Map Service) tiles. 
+
 ```{r}
+# transparent(透明)
 leaflet() %>% addTiles() %>% setView(-93.65, 42.0285, zoom = 4) %>%
   addWMSTiles(
     baseUrl = "http://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0r.cgi",
@@ -280,7 +290,8 @@ greenLeafIcon <- makeIcon(
 )
 
 leaflet(data = quakes[1:4,]) %>% addTiles() %>%
-  addMarkers(lng = ~long, lat = ~lat, icon = greenLeafIcon)
+  addMarkers(lng = ~long, lat = ~lat, 
+             icon = greenLeafIcon)
 ```
 
 If you have several icons to apply that vary only by a couple of parameters  
@@ -293,6 +304,7 @@ in that any arguments that are shorter than the number of markers will be recycl
 ```{r}
 quakes1 <- quakes[1:10,]
 
+# icons()和makeIcon()，其實都可以。
 leafIcons <- icons(
   iconUrl = ifelse(quakes1$mag < 4.6,
     "http://leafletjs.com/examples/custom-icons/leaf-green.png",
@@ -358,18 +370,14 @@ df.20 <- quakes[1:20,]
 
 getColor <- function(quakes) {
   sapply(quakes$mag, function(mag) {
-  if(mag <= 4) {
-    "green"
-  } else if(mag <= 5) {
-    "orange"
-  } else {
-    "red"
-  } })
+    if(mag <= 4) {"green"} 
+    else if(mag <= 5) {"orange"} 
+    else {"red"} 
+  })
 }
 
 icons <- awesomeIcons(
-  # icon = 'ios-close',
-  icon = 'coffee',
+  icon = 'ios-close',
   iconColor = 'black',
   library = 'ion',
   markerColor = getColor(df.20)
@@ -437,6 +445,69 @@ leaflet(df) %>% addTiles() %>%
     fillOpacity = 0.5
   )
 ```
+
+---
+
+## Popups
+
+Popups are small boxes containing arbitrary HTML,  
+that point to a specific point on the map.  
+
+Use the addPopups() function to add standalone popup to the map.
+
+```{r}
+content <- paste(sep = "<br/>", 
+  "<b><a href='http://www.samurainoodle.com'>Samurai Noodle</a></b>",
+  "606 5th Ave. S",
+  "Seattle, WA 98138"
+)
+
+leaflet() %>% addTiles() %>%
+  addPopups(-122.327298, 47.597131, content,
+    options = popupOptions(closeButton = FALSE)
+  )
+
+# ---
+# tmaptools::geocode_OSM("National Center for High-performance Computing") 
+# 120.99560  24.78261 
+
+content <- paste(sep = "<br/>",
+  "<b><a href='https://www.nchc.org.tw/'>NCHC</a></b>",
+  "No. 7, R&D 6th Rd.",
+  "SHsinchu Science Park, Hsinchu City",
+  "Taiwan, R.O.C. 30076"
+)
+
+leaflet() %>% addTiles() %>%
+  addPopups(
+    lng = 120.99560, 
+    lat = 24.78261, 
+    popup = content,
+    options = popupOptions(closeButton = FALSE)
+  )
+
+```
+
+A common use for popups is to have them appear when markers or shapes are clicked.  
+Marker and shape functions in the Leaflet package take a popup argument,  
+where you can pass in HTML to easily attach a simple popup.
+
+```{r}
+library(htmltools)
+
+df <- read.csv(textConnection(
+"Name,Lat,Long
+Samurai Noodle,47.597131,-122.327298
+<b>Kukai Ramen</b>,47.6154,-122.327157
+Tsukushinbo,47.59987,-122.326726"
+))
+
+leaflet(df) %>% addTiles() %>%
+  addMarkers(~Long, ~Lat, popup = ~htmlEscape(Name))
+```
+
+
+
 
 
 
