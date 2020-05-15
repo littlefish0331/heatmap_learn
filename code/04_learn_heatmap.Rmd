@@ -666,13 +666,209 @@ Leaflet makes it easy to take spatial lines and shapes from R and add them to ma
 Line and polygon data can come from a variety of sources: 請看文檔。
 
 ```{r}
+library(rgdal)
+
+# From https://www.census.gov/geo/maps-data/data/cbf/cbf_state.html
+# 上面的資料源失效了，請到
+# Census.gov > Browse By Topic > Geography > Geographies > 
+# Geography Mapping Files > More:2013 > Cartographic Boundary Files - Shapefile(CB) > 
+# 2013 > States > cb_2013_us_state_20m.zip
+states <- readOGR("../data/census_gov/cb_2013_us_state_20m.shp",
+  layer = "cb_2013_us_state_20m", GDAL1_integer64_policy = TRUE)
+```
+
+```{r}
+# 代碼的部分請看
+# https://www2.census.gov/geo/pdfs/maps-data/data/tiger/tgrshp2013/
+# TGRSHP2013_TechDoc_A.pdf
+# ALAND: 單位推論是平方公尺。
+
+# ---
+# states %>% names()
+# glimpse(states)
+# states@data %>% head
+data.table(NAME = states$NAME, 
+           STUSPS = states$STUSPS, 
+           ALAND = states$ALAND)
+```
+
+選擇像要的州states
+
+```{r}
+neStates <- subset(states, states$STUSPS %in% c(
+  "CT","ME","MA","NH","RI","VT","NY","NJ","PA"
+))
+```
+
+顏色配置
+
+```{r}
+# 參數palette: 可有四種來源名稱填入，
+# 然後這個函數的使用蠻奇特的，學一下~
+RColorBrewer::brewer.pal.info
+colorQuantile(palette = "YlOrRd", domain = neStates$ALAND)(neStates$ALAND)
+```
+
+地圖呈現
+
+```{r}
+# ---
+# 有一些不錯的參數可以調整
+# addPolygons - dashArray: 線條樣式參數。
+# 還有 
+# noClip、popup、popupOptions、label、labelOptions
+# options = pathOptions、highlightOptions
+
+leaflet(neStates) %>%
+  addPolygons(
+    color = "#444444", #stroke color
+    weight = 1, #區塊邊界的粗細
+    opacity = 1.0, #區塊邊界的透明度
+    smoothFactor = 0.5, #數字越大，地圖簡化越多，但是性能也越好。會隨著縮放做改變。
+    fillColor = ~colorQuantile("YlOrRd", ALAND)(ALAND),
+    fillOpacity = 0.5, #區塊顏色的透明度
+    popup = (neStates$ALAND/1000000) %>% round %>% 
+      paste(as.character(neStates$NAME), "<br>", ., "km^2"),
+    label = as.character(neStates$STUSPS),
+    highlightOptions = highlightOptions(
+      color = "white", 
+      weight = 2,
+      bringToFront = TRUE))
+```
+
+### Highlighting shapes
+
+The above example uses the highlightOptions parameter   
+to emphasize the currently moused-over polygon.   
+(The bringToFront = TRUE argument is necessary to prevent the thicker,  
+white border of the active polygon from being hidden behind the borders of other polygons  
+that happen to be higher in the z-order.)  
+
+You can use highlightOptions with all of the shape layers described on this page.
+
+### Simplifying complex polygons/polylines
+
+Very detailed (i.e. large) shape data can present a problem for Leafet,  
+since it is all eventually passed into the browser and rendered as SVG,  
+which is very expressive and convenient but has scalability limits.  
+
+In these cases, consider using rmapshaper::ms_simplify, which does topology-preserving simplification conveniently from R.
+
+```{r}
+# remotes::install_github("hrbrmstr/albersusa")
+library(albersusa)
+
+# ---
+fullsize <- usa_sf()
+object.size(fullsize)
+
+# ---
+simplified <- rmapshaper::ms_simplify(fullsize)
+object.size(simplified)
+```
+
+### Circles
+
+Circles are added using addCircles().  
+Circles are similar to circle markers; the only difference is that circles have their radii specified in meters, while circle markers are specified in pixels.  
+Circles 和 circle markers 的唯一不同在於一個半徑是用 meters，另一個是pixels。
+
+As a result, circles are scaled with the map as the user zooms in and out,  
+while circle markers remain a constant size on the screen regardless of zoom level.
+結果，當用戶放大和縮小時，圓圈將隨地圖縮放。  
+圓形標記在屏幕上的大小不變，無論縮放級別如何。
+
+When plotting circles, only the circle centers (and radii) are required,  
+so the set of valid data sources is different than for polygons  
+and the same as for markers.  
+See the introduction to Markers for specifics.
+
+```{r}
+cities <- read.csv(textConnection("
+City,Lat,Long,Pop
+Boston,42.3601,-71.0589,645966
+Hartford,41.7627,-72.6743,125017
+New York City,40.7127,-74.0059,8406000
+Philadelphia,39.9500,-75.1667,1553000
+Pittsburgh,40.4397,-79.9764,305841
+Providence,41.8236,-71.4222,177994
+"))
+cities
+```
+
+```{r}
+leaflet(cities) %>% addTiles() %>%
+  addCircles(
+    lng = ~Long, lat = ~Lat, 
+    weight = 1, #圓圈的邊框
+    radius = ~sqrt(Pop) * 30, popup = ~City
+  )
+```
+
+### Rectangles
+
+Rectangles are added using the addRectangles() function.  
+It takes lng1, lng2, lat1, and lat2 vector arguments  
+that define the corners of the rectangles.  
+
+These arguments are always required;  
+**the rectangle geometry cannot be inferred from the data object.**
+
+```{r}
+leaflet() %>% addTiles() %>%
+  addRectangles(
+    lng1=-118.456554, lat1=34.078039,
+    lng2=-118.436383, lat2=34.062717,
+    fillColor = "transparent" #設置成透明的小技巧。
+  )
+```
+
+---
+
+## Working with GeoJSON & TopoJSON
+
+For working with GeoJSON/TopoJSON data you have two options:  
+either read it into `sp objects`;  
+or use the `addGeoJSON()` and `addTopoJSON()` functions.
+
+### Reading as sp
+
+he first approach is to use either `rgdal` or `geojsonio` (packages) to read GeoJSON/TopoJSON as sp objects.  
+Then, you can use the full functionality of polygons, markers, colors, legends, etc.
+
+```{r}
+# From http://eric.clst.org/Stuff/USGeoJSON and
+# https://en.wikipedia.org/wiki/List_of_United_States_counties_and_county_equivalents
+# 第一個連結其實幫忙整理了很多資料，要慢慢挖掘使用
+# 請下載 US Counties: GeoJson
+nycounties <- rgdal::readOGR("json/nycounties.geojson")
+
+exportJson <- jsonlite::toJSON(nyc)
+
+geojsonio::geojson_write(input = nyc, file = "../data/nycounties") #預設會儲存 .geojson
+
+xy <- geojsonio::geojson_read("../data/nycounties", what = "sp")
+xy <- geojsonio::geojson_read("../data/gz_2010_us_050_00_500k.json", what = "sp")
+xy %>% str
+names(xy)
+# [1] "GEO_ID"     "STATE"      "COUNTY"     "NAME"       "LSAD"       "CENSUSAREA"
+
+# from Wikipedia list of counties, find Genesse county(杰納西縣), 
+# which should be located in NY state
+xy[grepl("36037", xy$GEO_ID), ]$STATE
+# [1] 36
+
+# NY state should be number 36
+nyc <- xy[xy$STATE == 36, ]
+leaflet(nyc) %>%
+  addTiles() %>%
+  addPolygons()
 
 ```
 
+```{r}
 
-
-
-
+```
 
 
 
