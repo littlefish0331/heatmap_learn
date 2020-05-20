@@ -43,6 +43,10 @@ knitr::opts_chunk$set(
 
 [reproduction code from JSS article 'tmap: Thematic Maps in R'](https://cran.r-project.org/web/packages/tmap/vignettes/tmap-JSS-code.html)
 
+配合 PDF 一起看，檔案在 reference/07_JSS_tmap Thematic Maps in R.pdf。  
+文章不用閱讀完，因為語法是舊的。
+
+
 ---
 
 # reproduction code from JSS article ‘tmap: Thematic Maps in R’
@@ -60,16 +64,16 @@ there are some changes in the code, especially regarding the necessary processin
 
 The code for the plotting methods is fully backward compatible,  
 although some messages or warnings may be given for deprecated functions or arguments.
-儘管可能會為不贊成使用的函數或參數給出一些消息或警告，但繪圖方法的代碼是完全向後兼容的。  
+儘管可能會為不推薦使用的函數或參數給出一些消息或警告，但繪圖方法的代碼是完全向後兼容的。  
 
 This code replaces the script v84i06.R for tmap and tmaptools version 2.0.  
 The produced figures are identical to those included in the article.
-此代碼替換了tmap和tmaptools 2.0版的腳本v84i06.R。  
-產生的數字與文章中包含的數字相同。
+此代碼替換了tmap和tmaptools 2.0版的v84i06.R腳本(07_fromJSS_ori_oldversion.R)。  
+產生的圖片編號與文章中包含的數字相同。
 
 See [`vignette("tmap-changes")`](https://cran.r-project.org/web/packages/tmap/doc/tmap-changes.html) for changes in version 2.x/3.x, which is recommended for people who have read the JSS article.  
 For people who are new to tmap, see [`vignette("tmap-getstarted")`](https://cran.r-project.org/web/packages/tmap/doc/tmap-getstarted.html).  
-有關版本2.x/3.x的更改，請參見vignette（“ tmap-changes”），建議已閱讀JSS文章的人閱讀。 對於不熟悉tmap的人，請參見vignette（“ tmap-getstarted”）。
+有關版本2.x/3.x的更改，請參見vignette("tmap-changes")，建議已閱讀JSS文章的人閱讀。 對於不熟悉tmap的人，請參見vignette(" tmap-getstarted")。
 
 ```{r}
 ###########################################################################
@@ -96,25 +100,25 @@ metro$growth <- (metro$pop2020 - metro$pop2010) / (metro$pop2010 * 10) * 100
 
 m1 <- 
   tm_shape(World) +
-  tm_polygons(col = "income_grp", palette = "-Blues", 
-              title = "Income class", contrast = 0.7, border.col = "grey30", id = "name") +
+  tm_polygons(col = "income_grp", title = "Income class", 
+              palette = "-Blues", contrast = 0.2, 
+              border.col = "grey30", id = "name") +
   tm_text(text = "iso_a3", size = "AREA", col = "grey30", root = 3) +
   
   tm_shape(shp = metro) +
-  tm_bubbles(size = "pop2010", 
-             col = "growth", 
-             border.col = "black",
-             border.alpha = 0.5,
+  tm_bubbles(size = "pop2010", col = "growth",
+             border.col = "black", border.alpha = 0.5,
              breaks = c(-Inf, 0, 2, 4, 6, Inf) ,
              palette = "-RdYlGn",
-             title.size = "Metro population (2010)", 
+             title.size = "Metro population (2010)",
              title.col = "Annual growth rate (%)",
              id = "name",
-             popup.vars = c("pop2010", "pop2020", "growth")) + 
-  tm_style("gray") +
-  tm_format(format = "World", frame.lwd = 2)
+             popup.vars = c("pop2010", "pop2020", "growth")) +
+  tm_style(style = "gray") +
+  tm_format(format = "World", frame.lwd = 2) #mode=plot才有影響。
 
-# ttm() +
+# tmap_mode(mode = "view")
+tmap_mode(mode = "plot")
 m1
 
 # tmap_save(m1, "bubble.png", width = 6.125, height = 3, scale = .75, dpi = 300, asp = 0, outer.margins = 0)
@@ -160,12 +164,17 @@ m21
 
 
 ```{r}
+# free.coords: 是否不限制同樣的經緯相對位置。
+
+# ---
 #############################
 ## Figure 4
 #############################
 m22 <- tm_shape(World) + 
-  tm_polygons("red") + 
-  tm_facets(by = "continent", free.coords = FALSE)
+  tm_polygons("red") +
+  tm_facets(by = "continent", ncol = 4, free.coords = F) + 
+  tm_shape(World) + 
+  tm_borders()
 
 
 # ttm() +
@@ -239,7 +248,7 @@ m2 <-
            bg.color = "lightblue",
            space.color = "grey90",
            inner.margins = c(0.04, 0.04, 0.03, 0.02), 
-           earth.boundary = TRUE) +
+           earth.boundary = TRUE) + #以地球為邊界變為橢圓。
   
   tm_legend(position = c("left", "bottom"), 
             frame = TRUE,
@@ -251,7 +260,7 @@ m2
 # 輸出會比較好看~
 tmap_save(tm = m2, filename = "../data/classic.png",
           width = 6.125, 
-          scale = .7, dpi = 300, outer.margins = 0)
+          scale = .7, dpi = 300, outer.margins = 0) #有錯誤題是說要設定outer.margins=0.1
 ```
 
 
@@ -262,7 +271,8 @@ tmap_save(tm = m2, filename = "../data/classic.png",
 ## Figure 8
 #############################
 
-m3 <- tm_shape(World, projection = "robin") +
+m3 <- 
+  tm_shape(World, projection = "robin") +
   tm_polygons(col = c("HPI", "gdp_cap_est"),
               palette = list("RdYlGn", "Purples"),
               style = c("pretty", "fixed"), n = 7, 
@@ -315,14 +325,17 @@ get_US_county_2010_shape <- function() {
 }
 
 # obtain Food Environment Atlas data
-FEA <- get_food_envir_data()
+# FEA <- get_food_envir_data()
+FEA <- read_excel("../data/DataDownload.xls", sheet = "HEALTH")
 
 # obtain US county shape
-US <- get_US_county_2010_shape()
+# US <- get_US_county_2010_shape()
+US <- sf::read_sf("../data/gz_2010_us_050_00_20m/gz_2010_us_050_00_20m.shp")
+levels(US$NAME) <- iconv(levels(US$NAME), from = "latin1", to = "utf8")
 
 # ---
-us1 <- qtm(US)
-# ttm() +
+us1 <- qtm(shp = US)
+
 us1
 # tmap_save(us1, "../data/US1.png", scale = .5, width = 6.125, asp = 0, outer.margins = 0)
 ```
@@ -338,10 +351,7 @@ library(sf)
 US$FIPS <- paste0(US$STATE, US$COUNTY)
 
 # append data to shape
-# US <- append_data(US, FEA, key.shp = "FIPS", key.data = "FIPS", ignore.duplicates = TRUE)
 US <- left_join(US, FEA, by = c("FIPS", "FIPS"))
-
-
 unmatched_data <- FEA %>% filter(!(FIPS %in% US$FIPS))
 
 tmap_mode("view")
@@ -417,7 +427,7 @@ m_AK <- tm_shape(US_AK, projection = 3338) +
               border.col = "gray50", border.alpha = .5, 
               breaks = seq(10, 50, by = 5)) + 
   
-  tm_shape(US_AK_states) +
+  tm_shape(shp = US_AK_states) +
   tm_borders(lwd = 1, col = "black", alpha = .5) +
   
   tm_layout(title = "Alaska", 
@@ -436,7 +446,7 @@ m_HI <- tm_shape(US_HI, projection = 3759) +
               border.alpha = .5, 
               breaks = seq(10, 50, by = 5)) +
   
-  tm_shape(US_HI_states) +
+  tm_shape(shp = US_HI_states) +
   tm_borders(lwd = 1, col = "black", alpha = .5) +
   
   tm_layout(title = "Hawaii", legend.show = FALSE, 
@@ -504,17 +514,19 @@ c1
 ```{r eval = F}
 # 似乎是一個無法解決的問題
 # [Issue with generating maps in RStudio : / Questions and Answers / OpenStreetMap Forum](https://forum.openstreetmap.org/viewtopic.php?id=68079)
-# 因為該套件沒有按照 OSM 的規範。
+# 因為該套件沒有按照 OSM 的規範， 所以要不到該資料區域的底圖。
 
 # ---
 #############################
 ## Figure 12b
 #############################
-crimes_osm <- read_osm(crimes[1, ])
-c2 <- qtm(crimes_osm) + qtm(crimes, symbols.col = "red", symbols.size = 0.5)
+crimes_osm <- read_osm(x = crimes[1, "geometry"])
+c2 <- qtm(crimes_osm) + 
+  qtm(crimes, symbols.col = "red", symbols.size = 0.5)
 c2
 # tmap_save(c2, "crimes2.jpg", scale = .6, width = 3, units = "in", outer.margins = 0)
 ```
+
 
 ```{r eval = FALSE}
 #############################
