@@ -362,7 +362,7 @@ tmap_save(tm = tm, filename = "../data/export_map/world_map.png")
 ## 如果只是存在當前的目錄底下(不可以再多資料夾)則可使用為相對路徑。
 ## 如果不在當前目錄，會多一個 world_map_files/
 # tmap_save(tm, filename = "E:/NCHC/project2020/heatmap_learn/data/export_map/world_map.html")
-# tmap_save(tm, filename = "world_map.html")
+tmap_save(tm, filename = "world_map.html")
 ```
 
 
