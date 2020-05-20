@@ -724,7 +724,7 @@ leaflet(neStates) %>%
     color = "#444444", #stroke color
     weight = 1, #區塊邊界的粗細
     opacity = 1.0, #區塊邊界的透明度
-    smoothFactor = 0.5, #數字越大，地圖簡化越多，但是性能也越好。會隨著縮放做改變。
+    smoothFactor = 0.5, #地圖區塊的邊界簡化程度。數字越大，地圖簡化越多，但是性能也越好。會隨著縮放做改變。
     fillColor = ~colorQuantile("YlOrRd", ALAND)(ALAND),
     fillOpacity = 0.5, #區塊顏色的透明度
     popup = (neStates$ALAND/1000000) %>% round %>% 
@@ -834,26 +834,45 @@ or use the `addGeoJSON()` and `addTopoJSON()` functions.
 ### Reading as sp
 
 he first approach is to use either `rgdal` or `geojsonio` (packages) to read GeoJSON/TopoJSON as sp objects.  
-Then, you can use the full functionality of polygons, markers, colors, legends, etc.
+Then, you can use the full functionality of `polygons`, `markers`, `colors`, `legends`, etc.
+
+第一種方法是使用`rgdal`或`geojsonio`套件將GeoJSON / TopoJSON讀取為sp對象。  
+然後，您可以使用多邊形，標記，顏色，圖例等的全部功能。
 
 ```{r}
 # From http://eric.clst.org/Stuff/USGeoJSON and
 # https://en.wikipedia.org/wiki/List_of_United_States_counties_and_county_equivalents
 # 第一個連結其實幫忙整理了很多資料，要慢慢挖掘使用
-# 請下載 US Counties: GeoJson
-nycounties <- rgdal::readOGR("json/nycounties.geojson")
+# 第一個連結 > 下載 US Counties > GeoJson
 
-exportJson <- jsonlite::toJSON(nyc)
+# ---
+# tutorial 方法失效，且資料找不到。
+# nycounties <- rgdal::readOGR("json/nycounties.geojson")
 
-geojsonio::geojson_write(input = nyc, file = "../data/nycounties") #預設會儲存 .geojson
+# Or use the geojsonio equivalent:
+# nycounties <- geojsonio::geojson_read("json/nycounties.geojson", what = "sp")
+```
 
-xy <- geojsonio::geojson_read("../data/nycounties", what = "sp")
+[How to download NY state all County data in R for leaflet map - Stack Overflow](https://stackoverflow.com/questions/43446802/how-to-download-ny-state-all-county-data-in-r-for-leaflet-map)
+
+[R: Selecting certain from a JSON file - Stack Overflow](https://stackoverflow.com/questions/46355170/r-selecting-certain-from-a-json-file)
+
+[leaflet/docs/json at master · rstudio/leaflet](https://github.com/rstudio/leaflet/tree/master/docs/json)
+
+```{r eval = F}
+# 資料有點大，所以我後來有把 new york 的資料另外拉出。
+
+# ---
+# 去stackoverflow上找答案
 xy <- geojsonio::geojson_read("../data/gz_2010_us_050_00_500k.json", what = "sp")
-xy %>% str
+# xy %>% str
+
 names(xy)
 # [1] "GEO_ID"     "STATE"      "COUNTY"     "NAME"       "LSAD"       "CENSUSAREA"
+# xy$STATE %>% unique() #52州
+# xy$COUNTY %>% unique() #325個縣
 
-# from Wikipedia list of counties, find Genesse county(杰納西縣), 
+# from Wikipedia list of counties, find Genesse county(傑納西縣, aka密西根州), 
 # which should be located in NY state
 xy[grepl("36037", xy$GEO_ID), ]$STATE
 # [1] 36
@@ -864,11 +883,152 @@ leaflet(nyc) %>%
   addTiles() %>%
   addPolygons()
 
+# ---
+# geojsonio::geojson_write(input = nyc, file = "../data/nycounties") #預設會儲存 .geojson
+```
+
+
+```{r}
+# 資料比較小，讀取比較快!!
+nycounties <- geojsonio::geojson_read("../data/nycounties.geojson", what = "sp")
+# nyc <- sf::read_sf("../data/nycounties.geojson") #也是OK
+
+leaflet(data = nycounties) %>%
+  addTiles() %>%
+  addPolygons()
 ```
 
 ```{r}
+nycounties <- geojsonio::geojson_read("../data/nycounties.geojson", what = "sp")
+pal <- colorNumeric("viridis", NULL)
 
+leaflet(nycounties) %>%
+  addTiles() %>%
+  addPolygons(stroke = FALSE, smoothFactor = 0.3, fillOpacity = 1,
+    fillColor = ~pal(log10(pop)),
+    label = ~paste0(county, ": ", formatC(pop, big.mark = ","))) %>%
+  addLegend(pal = pal, values = ~log10(pop), opacity = 1.0,
+    labFormat = labelFormat(transform = function(x) round(10^x)))
 ```
+
+
+```{r}
+# ---
+# 另一個資料源，所以和tutorial有點出入
+nycounties <- geojsonio::geojson_read("../data/nycounties01.geojson", what = "sp")
+
+# - smoothFactor: 
+# how much to simplify the polyline on each zoom level (more means better performance and less accurate representation)。
+# 每個縮放級別可簡化多段線多少（更多意味著更好的性能和更不准確的表示）
+pal <- colorNumeric("viridis", NULL)
+
+# leaflet(data = nycounties) %>%
+leaflet(nycounties) %>%
+  addTiles() %>%
+  addPolygons(
+    stroke = TRUE, #地圖區塊邊界是否出現
+    color = "#444444", #stroke color
+    weight = 1, #區塊邊界的粗細
+    opacity = 1.0, #區塊邊界的透明度
+    highlightOptions = highlightOptions(
+      color = "white", 
+      weight = 1,
+      opacity = 1, 
+      bringToFront = TRUE),
+    smoothFactor = 0.3, #地圖區塊的邊界簡化程度。數字越大，地圖簡化越多，但是性能也越好。會隨著縮放做改變。
+    fillOpacity = 1, #地圖區塊填色的透命度。
+    fillColor = ~pal(CENSUSAREA),
+    label = ~paste0(NAME, ": ", formatC(CENSUSAREA, big.mark = ","))) %>%
+  addLegend(pal = pal, 
+            values = ~CENSUSAREA, #vales也可以直接在這裡轉換。
+            opacity = 1.0, #legend色調的透明度。
+            labFormat = labelFormat(transform = function(x) x)) #把vales放進這裡做轉換。
+```
+
+This approach is preferred over using addGeoJSON/addTopoJSON,  
+as it makes it easy to use feature properties in determining map colors, labels, etc., or to modify or add new properties.  
+與使用addGeoJSON/addTopoJSON相比，此方法更為可取，  
+因為它可以輕鬆使用要素屬性來確定地圖顏色，標籤等，或修改或添加新屬性。  
+
+The main downside to this approach is that it only supports feature collections where all features are of the same type,  
+whereas in GeoJSON/TopoJSON it’s possible-though uncommon-to have a single feature collection that contains, say, both markers and polygons.
+這種方法的主要缺點是，它僅支持所有要素都屬於同一類型的要素集，  
+而在GeoJSON/TopoJSON中，有可能（儘管不常見）有一個包含例如標記和多邊形的要素集。
+
+### Working with raw GeoJSON/TopoJSON
+
+資料來源:  
+
+[topojson/us-atlas: Pre-built TopoJSON from the U.S. Census Bureau.](https://github.com/topojson/us-atlas#counties)
+
+[vega/us-10m.json at master · vega/vega](https://github.com/vega/vega/blob/master/docs/data/us-10m.json)
+
+[leaflet/docs/json at master · rstudio/leaflet](https://github.com/rstudio/leaflet/tree/master/docs/json)
+
+```{r}
+topoData <- readLines("../data/states-10m.json") %>% paste(collapse = "\n")
+
+leaflet() %>% setView(lng = -98.583, lat = 39.833, zoom = 3) %>%
+  addTiles() %>%
+  addTopoJSON(topoData, weight = 1, color = "#444444", fill = FALSE)
+
+# ---
+topoData <- readLines("../data/us-10m.json") %>% paste(collapse = "\n")
+
+leaflet() %>% setView(lng = -98.583, lat = 39.833, zoom = 3) %>%
+  addTiles() %>%
+  addTopoJSON(topoData, weight = 1, color = "#444444", fill = FALSE)
+```
+
+### Styling raw GeoJSON/TopoJSON
+
+資料來源: 
+
+[geo-countries/data at master · datasets/geo-countries](https://github.com/datasets/geo-countries/tree/master/data)
+
+[leaflet/docs/json at master · rstudio/leaflet](https://github.com/rstudio/leaflet/tree/master/docs/json)
+
+```{r}
+library(jsonlite)
+
+# From http://data.okfn.org/data/datasets/geo-boundaries-world-110m
+geojson <- readLines("../data/countries.geojson", warn = FALSE) %>%
+  paste(collapse = "\n") %>%
+  fromJSON(simplifyVector = FALSE)
+
+# Default styles for all features
+geojson$style = list(
+  weight = 1,
+  color = "#555555",
+  opacity = 1,
+  fillOpacity = 0.8
+)
+
+# Gather GDP estimate from all countries
+gdp_md_est <- sapply(geojson$features, function(feat) {
+  feat$properties$gdp_md_est
+})
+# Gather population estimate from all countries
+pop_est <- sapply(geojson$features, function(feat) {
+  max(1, feat$properties$pop_est)
+})
+
+# Color by per-capita GDP using quantiles
+pal <- colorQuantile("Greens", gdp_md_est/pop_est)
+# Add a properties$style list to each feature
+geojson$features <- lapply(geojson$features, function(feat) {
+  feat$properties$style <- list(
+    fillColor = pal(
+      feat$properties$gdp_md_est / max(1, feat$properties$pop_est)
+    )
+  )
+  feat
+})
+
+# Add the now-styled GeoJSON object to the map
+leaflet() %>% addGeoJSON(geojson)
+```
+
 
 
 
