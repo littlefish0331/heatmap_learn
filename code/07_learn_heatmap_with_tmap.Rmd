@@ -511,7 +511,7 @@ c1
 # tmap_save(c1, "crimes1.png", scale = .6, width = 3, units = "in", outer.margins = 0)
 ```
 
-```{r eval = F}
+```{r}
 # 似乎是一個無法解決的問題
 # [Issue with generating maps in RStudio : / Questions and Answers / OpenStreetMap Forum](https://forum.openstreetmap.org/viewtopic.php?id=68079)
 # 因為該套件沒有按照 OSM 的規範， 所以要不到該資料區域的底圖。
@@ -652,9 +652,6 @@ tm_shape(shp = crimes_city) +
           popup.vars = TRUE) +
   tm_view(alpha = 1, basemaps = "Esri.WorldTopoMap")
 ```
-
-
-
 
 
 ---
