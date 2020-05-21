@@ -515,12 +515,14 @@ c1
 # 似乎是一個無法解決的問題
 # [Issue with generating maps in RStudio : / Questions and Answers / OpenStreetMap Forum](https://forum.openstreetmap.org/viewtopic.php?id=68079)
 # 因為該套件沒有按照 OSM 的規範， 所以要不到該資料區域的底圖。
+# 解決方法就是改參數type，變成別的底圖，
+# [tmaptools/read_osm.R at master · mtennekes/tmaptools](https://github.com/mtennekes/tmaptools/blob/master/R/read_osm.R)
 
 # ---
 #############################
 ## Figure 12b
 #############################
-crimes_osm <- read_osm(x = crimes[1, "geometry"])
+crimes_osm <- read_osm(crimes, type = "osm-transport")
 c2 <- qtm(crimes_osm) + 
   qtm(crimes, symbols.col = "red", symbols.size = 0.5)
 c2
@@ -528,7 +530,7 @@ c2
 ```
 
 
-```{r eval = FALSE}
+```{r}
 #############################
 ## Figure 13
 #############################
@@ -593,17 +595,21 @@ c4
 
 
 ```{r}
+# 無法做出和原圖一樣，不知道為什麼XD
+
+# ---
 #############################
 ## Figure 16
 #############################
 london_city <- london[london$name == "City",]
 crimes_city <- crop_shape(crimes_london, london_city, polygon = TRUE)
 london_osm <- read_osm(london_city, type = "stamen-watercolor", zoom = 13)
+# london_osm <- read_osm(london_city, type = "osm", zoom = 13) #這個底圖不能用了
 
-c5 <- qtm(london_osm) +
+c5 <- qtm(london_osm, basemaps = "Stamen.Watercolor") +
   tm_shape(crimes_city) +
   tm_dots(size = .2) +
-  tm_facets("Crime.type", free.coords = FALSE)
+  tm_facets(by = "Crime.type", ncol = 4, free.coords = FALSE)
 
 c5
 # tmap_save(c5, "crimes5.png", scale = 1, width = 6.125, asp = NA, outer.margins = 0)
@@ -639,7 +645,7 @@ crimes_city$Crime.group <- factor(crime_lookup[crimes_city$Crime.type],
                                   labels = crime_categories)
 
 tmap_mode("view")
-tm_shape(crimes_city) +
+tm_shape(shp = crimes_city) +
   tm_dots(jitter = 0.2, 
           col = "Crime.group", 
           palette = "Dark2", 
