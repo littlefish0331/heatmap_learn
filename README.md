@@ -10,7 +10,10 @@
 - Stamen
 - Mapbox
 - Naver Map
-- thunderforest、CartoDB、ERSI
+- thunderforest
+- CartoDB
+- ERSI
+- CloudMade Maps
 
 ## 目標
 
